@@ -25,6 +25,7 @@ function run() {
       .collection("categories");
     const productsCollection = client.db("flipphoeDB").collection("products");
     const userCollection = client.db("flipphoeDB").collection("users");
+    const orderCollection = client.db("flipphoeDB").collection("orders");
 
     app.get("/categories", async (req, res) => {
       const result = await categoriesCollection.find({}).toArray();
@@ -42,6 +43,16 @@ function run() {
     });
     app.post("/login", async (req, res) => {
       const result = await userCollection.insertOne(req.body);
+      res.send(result);
+    });
+    app.post("/orders", async (req, res) => {
+      const result = await orderCollection.insertOne(req.body);
+      res.send(result);
+    });
+    app.get("/orders/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email }
+      const result = await orderCollection.find(query).toArray();
       res.send(result);
     });
     app.get("/role/:email", async (req, res) => {
