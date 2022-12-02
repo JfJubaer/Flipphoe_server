@@ -20,9 +20,7 @@ const client = new MongoClient(uri, {
 // databaseSection
 function run() {
   try {
-    const categoriesCollection = client
-      .db("flipphoeDB")
-      .collection("categories");
+    const categoriesCollection = client.db("flipphoeDB").collection("categories");
     const productsCollection = client.db("flipphoeDB").collection("products");
     const userCollection = client.db("flipphoeDB").collection("users");
     const orderCollection = client.db("flipphoeDB").collection("orders");
@@ -31,10 +29,10 @@ function run() {
       const result = await categoriesCollection.find({}).toArray();
       res.send(result);
     });
-    app.get("/category/:id", async (req, res) => {
+    app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const result = await categoriesCollection.findOne(query);
+      const query = { categoryId: id };
+      const result = await productsCollection.find(query).toArray();
       res.send(result);
     });
     app.get("/products", async (req, res) => {
@@ -57,7 +55,7 @@ function run() {
     });
     app.get("/role/:email", async (req, res) => {
       const user = await userCollection.findOne({ email: req.params.email });
-      if (user.role) {
+      if (user?.role) {
         res.send({ role: user.role });
       } else {
         res.send({ role: "buyer" });
@@ -66,25 +64,30 @@ function run() {
     app.get("/buyer", async (req, res) => {
       const result = await userCollection.find({ role: "buyer" }).toArray();
       res.send(result);
+
     });
+    app.delete('/buyer/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    })
     app.get("/seller", async (req, res) => {
       const result = await userCollection.find({ role: "seller" }).toArray();
       res.send(result);
+      app.delete('/seller/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+        const result = await userCollection.deleteOne(query);
+        res.send(result);
+      })
     });
     app.post("/addproduct", async (req, res) => {
-      console.log(req.body);
-      const result = await res.send({ result: "hello" });
-    });
-    app.post("/addproduct", async (req, res) => {
-      console.log(req.body);
       const result = await productsCollection.insertOne(req.body);
       res.send(result);
     });
     app.get("/myproducts/:email", async (req, res) => {
-      const result = await productsCollection
-        .find({ email: req.params.email })
-        .toArray();
-      console.log(req.params.email);
+      const result = await productsCollection.find({ email: req.params.email }).toArray();
       res.send(result);
     });
   } finally {
