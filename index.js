@@ -64,12 +64,16 @@ function run() {
     });
     app.get("/role/:email", async (req, res) => {
       const user = await userCollection.findOne({ email: req.params.email });
-      if (user?.role) {
-        res.send({ role: user.role });
-      }
-      else {
+      if (user?.role === "buyer") {
         res.send({ role: "buyer" });
       }
+      if (user?.role === "seller") {
+        res.send({ role: "seller" });
+      }
+      if (user?.role === "admin") {
+        res.send({ role: "admin" });
+      }
+
     });
     // buyer route
     app.get("/buyer", async (req, res) => {
