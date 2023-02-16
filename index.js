@@ -4,6 +4,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require("stripe")('sk_test_51MbPCuFJhUO1VhGGxexvteISUJPR7MV7klUxhprR0MmtpaREq8gE2amUpj5hhb3VGqBOUnTkEW80jhkmDBYS99Yv00gZSQDhIt');
 
 // middleWire
 
@@ -26,6 +27,7 @@ function run() {
     const productsCollection = client.db("flipphoeDB").collection("products");
     const userCollection = client.db("flipphoeDB").collection("users");
     const orderCollection = client.db("flipphoeDB").collection("orders");
+    const paymentCollection = client.db("flipphoeDB").collection("payment");
 
     app.get("/categories", async (req, res) => {
       const result = await categoriesCollection.find({}).toArray();
@@ -55,14 +57,21 @@ function run() {
       const result = await orderCollection.find(query).toArray();
       res.send(result);
     });
+    app.delete("/orders/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await orderCollection.deleteOne({ _id: ObjectId(id) });
+      res.send(result);
+    });
     app.get("/role/:email", async (req, res) => {
       const user = await userCollection.findOne({ email: req.params.email });
       if (user?.role) {
         res.send({ role: user.role });
-      } else {
+      }
+      else {
         res.send({ role: "buyer" });
       }
     });
+    // buyer route
     app.get("/buyer", async (req, res) => {
       const result = await userCollection.find({ role: "buyer" }).toArray();
       res.send(result);
@@ -74,16 +83,17 @@ function run() {
       const result = await userCollection.deleteOne(query);
       res.send(result);
     })
+    // seller route
     app.get("/seller", async (req, res) => {
       const result = await userCollection.find({ role: "seller" }).toArray();
       res.send(result);
-      app.delete('/seller/:id', async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: ObjectId(id) };
-        const result = await userCollection.deleteOne(query);
-        res.send(result);
-      })
     });
+    app.delete('/seller/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    })
     app.post("/addproduct", async (req, res) => {
       const result = await productsCollection.insertOne(req.body);
       res.send(result);
@@ -92,6 +102,31 @@ function run() {
       const result = await productsCollection.find({ email: req.params.email }).toArray();
       res.send(result);
     });
+    app.delete("/myproducts/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await productsCollection.deleteOne({ _id: ObjectId(id) });
+      res.send(result);
+    });
+
+    // payment section
+    app.post('/payment', async (req, res) => {
+      const total = req.body.total;
+      const price = total * 1;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: 'usd',
+        amount: amount,
+        "payment_method_types": [
+          "card"
+        ]
+      });
+      res.send({ clientSecret: paymentIntent.client_secret })
+    })
+    app.post('/payment-done', async (req, res) => {
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment);
+      res.send(result);
+    })
   } finally {
   }
 }
